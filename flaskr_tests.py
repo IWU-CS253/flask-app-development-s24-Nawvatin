@@ -31,5 +31,19 @@ class FlaskrTestCase(unittest.TestCase):
         assert b'<strong>HTML</strong> allowed here' in rv.data
         assert b'A category' in rv.data
 
+    def test_show_entries(self):
+        with app.test_client() as client:
+            response = client.get('/')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'show_entries.html', response.data)
+            self.assertTrue(b'entries' in response.data)
+
+    def test_close_db(self):
+        with app.app_context():
+            g = type('G', (object,), {'sqlite_db': type('SQLiteDB', (object,), {'close': lambda self: None})})()
+            close_db(None)
+            self.assertTrue(hasattr(g.sqlite_db, 'close'))
+            self.assertTrue(callable(g.sqlite_db.close))
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-    Flaskr
+    Flaskr Plus
     ~~~~~~
 
     A microblog example application written as Flask tutorial with
@@ -13,7 +13,6 @@
 import os
 from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, request, g, redirect, url_for, render_template, flash
-
 
 # create our little application :)
 app = Flask(__name__)
@@ -67,17 +66,43 @@ def close_db(error):
 
 @app.route('/')
 def show_entries():
+    """Shows all entries, optionally filtered by category, with
+    a category selection interface and add post interface above.
+    """
     db = get_db()
-    cur = db.execute('select id, title, text, category from entries order by id desc')
-    entries = cur.fetchall()
-    return render_template('show_entries.html', entries=entries)
+
+    # Filter view if category specified in query string
+    if "category" in request.args:
+        cur = db.execute('SELECT id, title, category, text FROM entries WHERE category = ? ORDER BY id DESC',
+                         [request.args["category"]])
+        entries = cur.fetchall()
+    else:
+        cur = db.execute('SELECT id, title, category, text FROM entries ORDER BY id DESC')
+        entries = cur.fetchall()
+
+    # Get a list of categories for populating the category chooser
+    cur = db.execute('SELECT DISTINCT category FROM entries ORDER BY category')
+    categories = cur.fetchall()
+
+    return render_template('show_entries.html', entries=entries, categories=categories)
 
 
 @app.route('/add', methods=['POST'])
 def add_entry():
+    """Adds a new post"""
     db = get_db()
-    db.execute('insert into entries (title, text, category) values (?, ?, ?)',
-               [request.form['title'], request.form['text'], request.form['category']])
+    db.execute('INSERT INTO entries (title, category, text) VALUES (?, ?, ?)',
+               [request.form['title'], request.form['category'], request.form['text']])
     db.commit()
     flash('New entry was successfully posted')
+    return redirect(url_for('show_entries'))
+
+
+@app.route('/delete', methods=['POST'])
+def delete_entry():
+    """Deletes a selected post, identified by its id"""
+    db = get_db()
+    db.execute('DELETE FROM entries WHERE id=?', [request.form['id']])
+    db.commit()
+    flash('Entry deleted')
     return redirect(url_for('show_entries'))

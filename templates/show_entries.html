@@ -35,20 +35,22 @@
   <h2>Posts</h2>
   <ul class="list-group entries">
     {% for entry in entries %}
-      <li class="list-group-item">
+        <li class="list-group-item">
         <h3>{{ entry.title }}</h3>
         <i>[{{ entry.category }}]</i>
         <p>{{ entry.text|safe }}</p>
+        <!-- Add an Edit button -->
+        <a href="{{ url_for('edit_entry', post_id=entry.id) }}" class="btn btn-primary">Edit</a>
         <!-- A form to submit a delete request for the current entry.
              Uses a hidden input to be able to pass the current id
              to the request handler. -->
-        <form action="{{ url_for('delete_entry') }}" method="post">
+        <form action="{{ url_for('delete_entry') }}" method="post" style="display: inline;">
           <input type="hidden" name="id" value="{{ entry.id }}">
           <button type="submit" class="btn btn-danger">Delete</button>
         </form>
-      </li>
+        </li>
     {% else %}
-      <li class="list-group-item"><em>Unbelievable. No entries here so far</em></li>
+        <li class="list-group-item"><em>Unbelievable. No entries here so far</em></li>
     {% endfor %}
   </ul>
 {% endblock %}

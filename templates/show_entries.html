@@ -1,27 +1,41 @@
 {% extends "layout.html" %}
 {% block body %}
   <form action="{{ url_for('add_entry') }}" method="post" class="add-entry">
-    <dl>
-      <dt>Title:
-      <dd><input type="text" size="30" name="title">
-      <dt>Category:
-      <dd><input type="text" size="30" name="category">
-      <dt>Text:
-      <dd><textarea name="text" rows="5" cols="40"></textarea>
-      <dd><input type="submit" value="Share">
-    </dl>
+    <div class="row mb-3">
+      <label for="title" class="col-sm-2 col-form-label">Title:</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" id="title" name="title">
+      </div>
+    </div>
+    <div class="row mb-3">
+      <label for="category" class="col-sm-2 col-form-label">Category:</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" id="category" name="category">
+      </div>
+    </div>
+    <div class="row mb-3">
+      <label for="text" class="col-sm-2 col-form-label">Text:</label>
+      <div class="col-sm-10">
+        <textarea class="form-control" id="text" name="text" rows="5"></textarea>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col-sm-10 offset-sm-2">
+        <button type="submit" class="btn btn-primary">Share</button>
+      </div>
+    </div>
   </form>
   <h2>Categories</h2>
-  <ul class="categories">
-    <li><a href="?">[all]</a></li>
-  {% for category in categories %}
-    <li><a href="?category={{ category.category }}">{{ category.category }}</a></li>
-  {% endfor %}
+  <ul class="list-group categories">
+    <li class="list-group-item"><a href="?">[all]</a></li>
+    {% for category in categories %}
+      <li class="list-group-item"><a href="?category={{ category.category }}">{{ category.category }}</a></li>
+    {% endfor %}
   </ul>
   <h2>Posts</h2>
-  <ul class="entries">
-  {% for entry in entries %}
-    <li>
+  <ul class="list-group entries">
+    {% for entry in entries %}
+      <li class="list-group-item">
         <h3>{{ entry.title }}</h3>
         <i>[{{ entry.category }}]</i>
         <p>{{ entry.text|safe }}</p>
@@ -30,11 +44,11 @@
              to the request handler. -->
         <form action="{{ url_for('delete_entry') }}" method="post">
           <input type="hidden" name="id" value="{{ entry.id }}">
-          <button type="submit" class="del-button">Delete</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
         </form>
-    </li>
-  {% else %}
-    <li><em>Unbelievable.  No entries here so far</em></li>
-  {% endfor %}
+      </li>
+    {% else %}
+      <li class="list-group-item"><em>Unbelievable. No entries here so far</em></li>
+    {% endfor %}
   </ul>
 {% endblock %}

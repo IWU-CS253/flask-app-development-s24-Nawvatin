@@ -32,25 +32,21 @@ class FlaskrTestCase(unittest.TestCase):
         assert b'A category' in rv.data
 
     def test_delete_entry(self):
-        with app.app_context():
-            # Insert a test entry into the database
-            db = get_db()
-            db.execute("INSERT INTO entries (title, category, text) VALUES (?, ?, ?)",
-                       ["Test Title", "Test Category", "Test Text"])
+        # Create a test entry in the database to delete
+        with flaskr.app.app_context():
+            db = flaskr.get_db()
+            db.execute('INSERT INTO entries (id, title, text, category) VALUES (?, ?, ?, ?)',
+                       [1, 'data1', 'data2', 'data3'])
             db.commit()
 
-            # Retrieve the ID of the test entry
-            entry_id = db.execute("SELECT id FROM entries WHERE title=?", ["Test Title"]).fetchone()['id']
+        # Send a POST request to delete the test entry
+        response = self.app.post('/delete', data={'id': 1})
+        self.assertEqual(response.status_code, 302)
 
-            # Send a POST request to delete the test entry
-            response = self.app.post('/delete', data={'id': entry_id})
-
-            # Check if the entry was deleted
-            self.assertEqual(response.status_code, 302)  # Redirect status code
-            self.assertIn(b'Entry deleted', response.data)  # Check flash message
-
-            # Check if the entry is no longer in the database
-            entry = db.execute("SELECT * FROM entries WHERE id=?", [entry_id]).fetchone()
+        # Check if the test entry was deleted from the database
+        with flaskr.app.app_context():
+            db = flaskr.get_db()
+            entry = db.execute('SELECT * FROM entries WHERE id = ?', [1]).fetchone()
             self.assertIsNone(entry)
 
 

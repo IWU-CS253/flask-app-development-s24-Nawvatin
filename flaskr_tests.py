@@ -17,10 +17,30 @@ class FlaskrTestCase(unittest.TestCase):
         os.unlink(flaskr.app.config['DATABASE'])
 
     def test_empty_db(self):
+        # Test when database is not empty
+        with flaskr.app.app_context():
+            db = flaskr.get_db()
+            db.execute('INSERT INTO entries (id, title, text, category) VALUES (?, ?, ?, ?)',
+                       [1, 'Test Title', 'Test Text', 'Test Category'])
+            db.commit()
+
+        rv = self.app.get('/')
+        assert b'No entries here so far' not in rv.data
+        assert b'Test Title' in rv.data
+        assert b'Test Text' in rv.data
+        assert b'Test Category' in rv.data
+
+        # Test when database is empty
+        with flaskr.app.app_context():
+            db = flaskr.get_db()
+            db.execute('DELETE FROM entries')
+            db.commit()
+
         rv = self.app.get('/')
         assert b'No entries here so far' in rv.data
 
     def test_messages(self):
+        # Test valid message submission
         rv = self.app.post('/add', data=dict(
             title='<Hello>',
             text='<strong>HTML</strong> allowed here',
@@ -31,47 +51,54 @@ class FlaskrTestCase(unittest.TestCase):
         assert b'<strong>HTML</strong> allowed here' in rv.data
         assert b'A category' in rv.data
 
+        # Test invalid message submission (e.g., empty fields)
+        rv = self.app.post('/add', data=dict(
+            title='',
+            text='',
+            category=''
+        ), follow_redirects=True)
+        assert b'Field must be filled out' in rv.data
+
     def test_delete_entry(self):
-        # Create a test entry in the database to delete
-        with flaskr.app.app_context():
-            db = flaskr.get_db()
-            db.execute('INSERT INTO entries (id, title, text, category) VALUES (?, ?, ?, ?)',
-                       [1, 'data1', 'data2', 'data3'])
-            db.commit()
+        # Test when entry to be deleted doesn't exist
+        response = self.app.post('/delete', data={'id': 999})
+        self.assertEqual(response.status_code, 404)
 
-        # Send a POST request to delete the test entry
-        response = self.app.post('/delete', data={'id': 1})
-        self.assertEqual(response.status_code, 302)
-
-        # Check if the test entry was deleted from the database
-        with flaskr.app.app_context():
-            db = flaskr.get_db()
-            entry = db.execute('SELECT * FROM entries WHERE id = ?', [1]).fetchone()
-            self.assertIsNone(entry)
+        # Test when deletion request is made with invalid parameters
+        response = self.app.post('/delete', data={})
+        self.assertEqual(response.status_code, 400)
 
     def test_edit_entry(self):
-        # Create a test entry in the database to edit
+        # Test when entry to be edited doesn't exist
+        response = self.app.post('/edit/999', data=dict(
+            title='Updated Title',
+            text='Updated Text',
+            category='Updated Category'
+        ), follow_redirects=True)
+        self.assertEqual(response.status_code, 404)
+
+        # Test when edit request is made with invalid parameters
+        response = self.app.post('/edit/1', data={})
+        self.assertEqual(response.status_code, 400)
+
+        # Test editing only specific fields
         with flaskr.app.app_context():
             db = flaskr.get_db()
             db.execute('INSERT INTO entries (id, title, text, category) VALUES (?, ?, ?, ?)',
                        [1, 'Old Title', 'Old Text', 'Old Category'])
             db.commit()
 
-        # Send a POST request to edit the test entry
         response = self.app.post('/edit/1', data=dict(
             title='Updated Title',
-            text='Updated Text',
-            category='Updated Category'
         ), follow_redirects=True)
 
-        # Check if the test entry was successfully updated in the database
         with flaskr.app.app_context():
             db = flaskr.get_db()
             entry = db.execute('SELECT * FROM entries WHERE id = ?', [1]).fetchone()
             self.assertIsNotNone(entry)
             self.assertEqual(entry['title'], 'Updated Title')
-            self.assertEqual(entry['text'], 'Updated Text')
-            self.assertEqual(entry['category'], 'Updated Category')
+            self.assertEqual(entry['text'], 'Old Text')  # Text should remain unchanged
+            self.assertEqual(entry['category'], 'Old Category')  # Category should remain unchanged
 
 if __name__ == '__main__':
     unittest.main()

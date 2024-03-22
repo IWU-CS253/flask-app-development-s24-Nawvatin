@@ -69,5 +69,29 @@ class FlaskrTestCase(unittest.TestCase):
             entry = db.execute('SELECT * FROM entries WHERE id = ?', [1]).fetchone()
             self.assertIsNone(entry)
 
+    def test_edit_entry(self):
+        # Create a test entry in the database to edit
+        with flaskr.app.app_context():
+            db = flaskr.get_db()
+            db.execute('INSERT INTO entries (id, title, text, category) VALUES (?, ?, ?, ?)',
+                       [1, 'Old Title', 'Old Text', 'Old Category'])
+            db.commit()
+
+        # Send a POST request to edit the test entry
+        response = self.app.post('/edit/1', data=dict(
+            title='Updated Title',
+            text='Updated Text',
+            category='Updated Category'
+        ), follow_redirects=True)
+
+        # Check if the test entry was successfully updated in the database
+        with flaskr.app.app_context():
+            db = flaskr.get_db()
+            entry = db.execute('SELECT * FROM entries WHERE id = ?', [1]).fetchone()
+            self.assertIsNotNone(entry)
+            self.assertEqual(entry['title'], 'Updated Title')
+            self.assertEqual(entry['text'], 'Updated Text')
+            self.assertEqual(entry['category'], 'Updated Category')
+
 if __name__ == '__main__':
     unittest.main()

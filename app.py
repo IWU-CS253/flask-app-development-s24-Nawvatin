@@ -121,7 +121,7 @@ def edit_entry(post_id):
         flash('Post updated successfully')
         return redirect(url_for('show_entries'))
 
-    return render_template('edit_entry.html', post=post)
+    return render_template('show_entries.html', post=post)
 
 
 if __name__ == '__main__':

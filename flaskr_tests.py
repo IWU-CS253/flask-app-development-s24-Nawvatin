@@ -31,5 +31,28 @@ class FlaskrTestCase(unittest.TestCase):
         assert b'<strong>HTML</strong> allowed here' in rv.data
         assert b'A category' in rv.data
 
+    def test_delete_entry(self):
+        with app.app_context():
+            # Insert a test entry into the database
+            db = get_db()
+            db.execute("INSERT INTO entries (title, category, text) VALUES (?, ?, ?)",
+                       ["Test Title", "Test Category", "Test Text"])
+            db.commit()
+
+            # Retrieve the ID of the test entry
+            entry_id = db.execute("SELECT id FROM entries WHERE title=?", ["Test Title"]).fetchone()['id']
+
+            # Send a POST request to delete the test entry
+            response = self.app.post('/delete', data={'id': entry_id})
+
+            # Check if the entry was deleted
+            self.assertEqual(response.status_code, 302)  # Redirect status code
+            self.assertIn(b'Entry deleted', response.data)  # Check flash message
+
+            # Check if the entry is no longer in the database
+            entry = db.execute("SELECT * FROM entries WHERE id=?", [entry_id]).fetchone()
+            self.assertIsNone(entry)
+
+
 if __name__ == '__main__':
     unittest.main()
